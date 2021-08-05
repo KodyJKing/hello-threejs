@@ -100,10 +100,6 @@ export default class RenderPixelatedPass extends Pass {
                     return distance(normal, getNormal(x, y)) * adjust;
                 }
 
-                float saturate(float x) {
-                    return clamp(x, 0.0, 1.0);
-                }
-
                 float depthEdgeIndicator() {
                     float depth = getDepth(0, 0);
                     float diff = 0.0;
@@ -111,7 +107,7 @@ export default class RenderPixelatedPass extends Pass {
                     diff += clamp(getDepth(-1, 0) - depth, 0.0, 1.0);
                     diff += clamp(getDepth(0, 1) - depth, 0.0, 1.0);
                     diff += clamp(getDepth(0, -1) - depth, 0.0, 1.0);
-                    return step(.02, diff);
+                    return step(.01, diff);
                 }
 
                 float normalEdgeIndicator() {
@@ -129,9 +125,12 @@ export default class RenderPixelatedPass extends Pass {
                     vec4 texel = texture2D( tDiffuse, vUv );
                     float dei = depthEdgeIndicator();
                     float nei = normalEdgeIndicator();
-                    float coefficient = dei > 0.0 ? (1.0 - dei * .125) : (1.0 + nei * .125);
-                    //float lum = dot(texel, vec4(.2126, .7152, .0722, .0));
-                    gl_FragColor = texel * coefficient;
+                    // float coefficient = dei > 0.0 ? (1.0 - dei * .25) : (1.0 + nei * .25);
+                    // float coefficient = dei > 0.0 ? (1.0 - dei * .5) : (1.0 + nei * .5);
+                    // float dCol = dei > 0.0 ? -dei * .2 : nei * .05;
+                    float dCol = -dei * .2 + nei * .05;
+                    // gl_FragColor = texel * coefficient;
+                    gl_FragColor = texel + dCol;
 
                     // vec4 col = texture2D( tDiffuse, vUv );
                     // float depth = texture2D( tDepth, vUv ).r;
