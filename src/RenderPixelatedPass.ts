@@ -2,7 +2,7 @@ import * as THREE from "three"
 import { WebGLRenderer, WebGLRenderTarget } from "three"
 import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass"
 
-export default class HellRenderPass extends Pass {
+export default class RenderPixelatedPass extends Pass {
 
     fsQuad: FullScreenQuad
     resolution: THREE.Vector2
@@ -93,6 +93,13 @@ export default class HellRenderPass extends Pass {
                     return texture2D( tNormal, vUv + vec2(x, y) * resolution.zw ).rgb;
                 }
 
+                // Only the shallower pixel should detect the normal edge.
+                float getNormalDistance(int x, int y, float depth, vec3 normal) {
+                    float adjust = clamp(sign(getDepth(x, y) + .0025 - depth), 0.0, 1.0);
+                    // float adjust = 1.0;
+                    return distance(normal, getNormal(x, y)) * adjust;
+                }
+
                 float saturate(float x) {
                     return clamp(x, 0.0, 1.0);
                 }
@@ -104,27 +111,31 @@ export default class HellRenderPass extends Pass {
                     diff += clamp(getDepth(-1, 0) - depth, 0.0, 1.0);
                     diff += clamp(getDepth(0, 1) - depth, 0.0, 1.0);
                     diff += clamp(getDepth(0, -1) - depth, 0.0, 1.0);
-                    return saturate(diff * 100.0);
+                    return step(.02, diff);
                 }
 
                 float normalEdgeIndicator() {
+                    float depth = getDepth(0, 0);
                     vec3 normal = getNormal(0, 0);
                     float diff = 0.0;
-                    diff += distance(normal, getNormal(1, 0));
-                    diff += distance(normal, getNormal(-1, 0));
-                    diff += distance(normal, getNormal(0, 1));
-                    diff += distance(normal, getNormal(0, -1));
-                    return saturate(diff * 100.0);
+                    diff += getNormalDistance(1, 0, depth, normal);
+                    diff += getNormalDistance(-1, 0, depth, normal);
+                    diff += getNormalDistance(0, 1, depth, normal);
+                    diff += getNormalDistance(0, -1, depth, normal);
+                    return step(.01, diff);
                 }
 
                 void main() {
                     vec4 texel = texture2D( tDiffuse, vUv );
-                    float edgeIndicator = max(depthEdgeIndicator(), normalEdgeIndicator());
-                    float lum = dot(texel, vec4(.2126, .7152, .0722, .0));
-                    // float 
-                    gl_FragColor = texel * (1.0 + edgeIndicator * .5);
-                    // vec4 texel = texture2D( tNormal, vUv );
-                    // gl_FragColor = vec4(texel.rgb, 1.0);
+                    float dei = depthEdgeIndicator();
+                    float nei = normalEdgeIndicator();
+                    float coefficient = (1.0 - dei * .125) * (1.0 + nei * .125);
+                    //float lum = dot(texel, vec4(.2126, .7152, .0722, .0));
+                    gl_FragColor = texel * coefficient;
+
+                    // vec4 col = texture2D( tDiffuse, vUv );
+                    // float depth = texture2D( tDepth, vUv ).r;
+                    // gl_FragColor = vec4(vec3(depth), 1.0);
                 }
                 `
         } )

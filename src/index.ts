@@ -5,7 +5,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass'
 import HelloWorldPass from "./HelloWorldPass"
-import HelloRenderPass from "./HelloRenderPass"
+import RenderPixelatedPass from "./RenderPixelatedPass"
 
 let camera: THREE.Camera, scene: THREE.Scene, renderer: THREE.WebGLRenderer, composer: EffectComposer
 
@@ -26,9 +26,10 @@ function init() {
 
     scene = new THREE.Scene()
 
-    let lambert = new THREE.MeshLambertMaterial()
+    let lambertMaterial = new THREE.MeshLambertMaterial()
+    let normalMaterial = new THREE.MeshNormalMaterial()
     function addBox( boxSideLength: number, x: number, z: number, rotation: number ) {
-        let mesh = new THREE.Mesh( new THREE.BoxGeometry( boxSideLength, boxSideLength, boxSideLength ), lambert )
+        let mesh = new THREE.Mesh( new THREE.BoxGeometry( boxSideLength, boxSideLength, boxSideLength ), lambertMaterial )
         mesh.castShadow = true
         mesh.receiveShadow = true
         mesh.rotation.y = rotation
@@ -40,18 +41,18 @@ function init() {
     addBox( .2, -.4, -.15, Math.PI / 4 )
 
     const planeSideLength = 2
-    let lambert2Sided = new THREE.MeshLambertMaterial( { side: THREE.DoubleSide } )
-    let planeMesh = new THREE.Mesh( new THREE.PlaneGeometry( planeSideLength, planeSideLength ), lambert2Sided )
+    let lambert2SidedMaterial = new THREE.MeshLambertMaterial( { side: THREE.DoubleSide } )
+    let planeMesh = new THREE.Mesh( new THREE.PlaneGeometry( planeSideLength, planeSideLength ), lambert2SidedMaterial )
     planeMesh.receiveShadow = true
     planeMesh.rotation.x = -Math.PI / 2
     scene.add( planeMesh )
 
-    let directionalLight = new THREE.DirectionalLight( 0xfff3d4, .5 )
+    let directionalLight = new THREE.DirectionalLight( 0xfffc9c, .5 )
     directionalLight.castShadow = true
     directionalLight.shadow.radius = 0
     directionalLight.position.set( 100, 100, 100 )
     scene.add( directionalLight )
-    scene.add( new THREE.AmbientLight( 0x2d3645 ) )
+    scene.add( new THREE.AmbientLight( 0x2d3645, 1.25 ) )
 
     renderer = new THREE.WebGLRenderer( { antialias: false } )
     renderer.shadowMap.enabled = true
@@ -60,7 +61,7 @@ function init() {
 
     composer = new EffectComposer( renderer )
     // composer.addPass( new RenderPass( scene, camera ) )
-    composer.addPass( new HelloRenderPass( renderResolution, scene, camera ) )
+    composer.addPass( new RenderPixelatedPass( renderResolution, scene, camera ) )
 
 
     let controls = new OrbitControls( camera, renderer.domElement )
