@@ -2,14 +2,27 @@ import * as THREE from "three"
 import { WebGLRenderer, WebGLRenderTarget } from "three"
 import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass"
 
-// Just inverts the output.
 export default class HellRenderPass extends Pass {
 
     fsQuad: FullScreenQuad
+    resolution: { x: number, y: number }
+    scene: THREE.Scene
+    camera: THREE.Camera
+    rgbRenderTarget: WebGLRenderTarget
 
-    constructor() {
+    constructor( resolution: { x: number, y: number }, scene: THREE.Scene, camera: THREE.Camera ) {
         super()
+        this.resolution = resolution
         this.fsQuad = new FullScreenQuad( this.material() )
+        this.scene = scene
+        this.camera = camera
+
+        const rgbRenderTarget = this.rgbRenderTarget = new WebGLRenderTarget( resolution.x, resolution.y )
+        rgbRenderTarget.texture.format = THREE.RGBAFormat
+        rgbRenderTarget.texture.minFilter = THREE.NearestFilter
+        rgbRenderTarget.texture.magFilter = THREE.NearestFilter
+        rgbRenderTarget.texture.generateMipmaps = false
+        rgbRenderTarget.stencilBuffer = false
     }
 
     render(
@@ -17,9 +30,12 @@ export default class HellRenderPass extends Pass {
         writeBuffer: WebGLRenderTarget,
         readBuffer: WebGLRenderTarget
     ) {
+        renderer.setRenderTarget( this.rgbRenderTarget )
+        renderer.render( this.scene, this.camera )
+
         // The declarations for Three.js don't include Material.uniforms
         // @ts-ignore
-        this.fsQuad.material.uniforms.tDiffuse.value = readBuffer.texture
+        this.fsQuad.material.uniforms.tDiffuse.value = this.rgbRenderTarget.texture
         if ( this.renderToScreen ) {
             renderer.setRenderTarget( null )
         } else {
@@ -45,7 +61,7 @@ export default class HellRenderPass extends Pass {
                 varying vec2 vUv;
                 void main() {
                     vec4 texel = texture2D( tDiffuse, vUv );
-                    gl_FragColor = 1. - texel;
+                    gl_FragColor = texel;
                 }`
         } )
     }
