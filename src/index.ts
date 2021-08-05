@@ -1,5 +1,5 @@
 import * as THREE from "three"
-import { Vector2 } from "three"
+import { GreaterEqualDepth, Vector2 } from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
@@ -12,6 +12,8 @@ import RenderPixelatedPass from "./RenderPixelatedPass"
 import warningStipesURL from "./assets/warningStripes.png"
 
 let camera: THREE.Camera, scene: THREE.Scene, renderer: THREE.WebGLRenderer, composer: EffectComposer
+
+let docecahedron: THREE.Mesh
 
 init()
 
@@ -39,7 +41,8 @@ function init() {
     camera.position.z = 0.9480823308542135
     camera.position.y = 0.7907471388920719
     scene = new THREE.Scene()
-    // scene.background = new THREE.Color( 0xb5b3a7 )
+    // scene.background = new THREE.Color( 0x151729 )
+    // scene.background = new THREE.Color( 0xffffff )
 
     const loader = new THREE.TextureLoader()
     const tex_warningStripes = pixelTex( loader.load( warningStipesURL ) )
@@ -47,10 +50,9 @@ function init() {
     tex_checker.repeat.set( 10, 10 )
 
     // Geometry
-    let lambertMaterial = new THREE.MeshLambertMaterial()
-    let lambert2SidedMaterial = new THREE.MeshLambertMaterial( { map: tex_checker, side: THREE.DoubleSide } )
     let normalMaterial = new THREE.MeshNormalMaterial()
-    let phongMaterial = new THREE.MeshPhongMaterial( { map: tex_warningStripes } )
+    // let phongMaterial = new THREE.MeshPhongMaterial( { map: tex_warningStripes } )
+    let phongMaterial = new THREE.MeshPhongMaterial( {} )
     function addBox( boxSideLength: number, x: number, z: number, rotation: number ) {
         let mesh = new THREE.Mesh( new THREE.BoxGeometry( boxSideLength, boxSideLength, boxSideLength ), phongMaterial )
         mesh.castShadow = true
@@ -59,30 +61,56 @@ function init() {
         mesh.position.y = boxSideLength / 2
         mesh.position.set( x, boxSideLength / 2 + .0001, z )
         scene.add( mesh )
+        return mesh
     }
     addBox( .4, 0, 0, Math.PI / 4 )
     addBox( .2, -.4, -.15, Math.PI / 4 )
 
     const planeSideLength = 2
-    let planeMesh = new THREE.Mesh( new THREE.PlaneGeometry( planeSideLength, planeSideLength ), lambert2SidedMaterial )
+    let planeMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry( planeSideLength, planeSideLength ),
+        new THREE.MeshPhongMaterial( { map: tex_checker, side: THREE.DoubleSide } )
+    )
     planeMesh.receiveShadow = true
     planeMesh.rotation.x = -Math.PI / 2
     scene.add( planeMesh )
+
+    {
+        const radius = .2
+        const geometry = new THREE.DodecahedronGeometry( radius )
+        docecahedron = new THREE.Mesh(
+            geometry,
+            new THREE.MeshPhongMaterial( {
+                color: 0x2379cf
+            } )
+        )
+        docecahedron.receiveShadow = true
+        docecahedron.castShadow = true
+        scene.add( docecahedron )
+    }
 
     // Lights
     let directionalLight = new THREE.DirectionalLight( 0xfffc9c, .5 )
     directionalLight.position.set( 100, 100, 100 )
     directionalLight.castShadow = true
     directionalLight.shadow.radius = 0
+    directionalLight.shadow.mapSize.set( 1024, 1024 )
     scene.add( directionalLight )
 
     scene.add( new THREE.AmbientLight( 0x2d3645, 1.25 ) )
 
-    let pointLight = new THREE.PointLight( 0xff8800, 2, 10, 2 )
-    pointLight.position.set( .6, .6, .8 )
-    pointLight.castShadow = true
-    pointLight.shadow.radius = 0
-    scene.add( pointLight )
+    // let pointLight = new THREE.PointLight( 0xff8800, 2, 100, 2 )
+    // pointLight.position.set( .6, .6, .8 )
+    // pointLight.castShadow = true
+    // pointLight.shadow.radius = 0
+    // pointLight.shadow.mapSize.set( 1024, 1024 )
+    // scene.add( pointLight )
+
+    let spotLight = new THREE.SpotLight( 0xff8800, 2, 10, Math.PI / 12, .02, 2 )
+    spotLight.position.set( .6, 1, 1 )
+    // spotLight.target = docecahedron
+    spotLight.castShadow = true
+    scene.add( spotLight )
 
     // Renderer
     renderer = new THREE.WebGLRenderer( { antialias: false } )
@@ -95,9 +123,9 @@ function init() {
     composer = new EffectComposer( renderer )
     // composer.addPass( new RenderPass( scene, camera ) )
     composer.addPass( new RenderPixelatedPass( renderResolution, scene, camera ) )
-    let bloomPass = new UnrealBloomPass( renderResolution, .5, 1, .25 )
+    // let bloomPass = new UnrealBloomPass( renderResolution, .5, 1, .25 )
+    // composer.addPass( bloomPass )
     // composer.addPass( new GlitchPass() )
-    composer.addPass( bloomPass )
 
 
     let controls = new OrbitControls( camera, renderer.domElement )
@@ -106,5 +134,8 @@ function init() {
 animate()
 function animate() {
     requestAnimationFrame( animate )
+    let t = performance.now() / 1000
+    docecahedron.rotation.y = t
+    docecahedron.position.y = .7 + Math.sin( t * 2 ) * .05
     composer.render()
 }
