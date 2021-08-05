@@ -7,56 +7,67 @@ import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass'
 import HelloWorldPass from "./HelloWorldPass"
 import HelloRenderPass from "./HelloRenderPass"
 
-let camera, scene, renderer: THREE.WebGLRenderer
-let geometry, material, mesh: THREE.Mesh
-let controls, composer: EffectComposer
+let camera: THREE.Camera, scene: THREE.Scene, renderer: THREE.WebGLRenderer, composer: EffectComposer
 
 init()
 
 function init() {
 
     let renderResolution = new Vector2( 256, 256 )
-    let screenResolution = new Vector2( window.innerWidth, window.innerHeight )
+    // let renderResolution = new Vector2( 1024, 1024 )
+    // let screenResolution = new Vector2( window.innerWidth, window.innerHeight )
+    let screenResolution = renderResolution.clone().multiplyScalar( 3 )
     let aspectRatio = screenResolution.x / screenResolution.y
 
     // camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 10 )
     camera = new THREE.OrthographicCamera( -aspectRatio, aspectRatio, 1, -1, .01, 10 )
     camera.position.z = 0.9480823308542135
     camera.position.y = 0.7907471388920719
-    let angle = Math.atan2( camera.position.y, camera.position.z )
-    console.log( angle )
-    console.log( Math.PI / angle )
 
     scene = new THREE.Scene()
 
-    const sideLength = .4
-    geometry = new THREE.BoxGeometry( sideLength, sideLength, sideLength )
-    material = new THREE.MeshNormalMaterial()
+    let lambert = new THREE.MeshLambertMaterial()
+    function addBox( boxSideLength: number, x: number, z: number, rotation: number ) {
+        let mesh = new THREE.Mesh( new THREE.BoxGeometry( boxSideLength, boxSideLength, boxSideLength ), lambert )
+        mesh.castShadow = true
+        mesh.receiveShadow = true
+        mesh.rotation.y = rotation
+        mesh.position.y = boxSideLength / 2
+        mesh.position.set( x, boxSideLength / 2, z )
+        scene.add( mesh )
+    }
+    addBox( .4, 0, 0, Math.PI / 4 )
+    addBox( .2, -.4, -.15, Math.PI / 4 )
 
-    mesh = new THREE.Mesh( geometry, material )
-    scene.add( mesh )
+    const planeSideLength = 2
+    let lambert2Sided = new THREE.MeshLambertMaterial( { side: THREE.DoubleSide } )
+    let planeMesh = new THREE.Mesh( new THREE.PlaneGeometry( planeSideLength, planeSideLength ), lambert2Sided )
+    planeMesh.receiveShadow = true
+    planeMesh.rotation.x = -Math.PI / 2
+    scene.add( planeMesh )
 
+    let directionalLight = new THREE.DirectionalLight( 0xfff3d4, .5 )
+    directionalLight.castShadow = true
+    directionalLight.shadow.radius = 0
+    directionalLight.position.set( 100, 100, 100 )
+    scene.add( directionalLight )
+    scene.add( new THREE.AmbientLight( 0x2d3645 ) )
 
-    renderer = new THREE.WebGLRenderer( { antialias: true } )
-    renderer.setSize( window.innerWidth, window.innerHeight )
+    renderer = new THREE.WebGLRenderer( { antialias: false } )
+    renderer.shadowMap.enabled = true
+    renderer.setSize( screenResolution.x, screenResolution.y )
     document.body.appendChild( renderer.domElement )
 
     composer = new EffectComposer( renderer )
-    composer.addPass( new RenderPass( scene, camera ) )
-    // composer.addPass( new GlitchPass() )
-    // composer.addPass( new HelloWorldPass() )
+    // composer.addPass( new RenderPass( scene, camera ) )
     composer.addPass( new HelloRenderPass( renderResolution, scene, camera ) )
 
 
-    controls = new OrbitControls( camera, renderer.domElement )
+    let controls = new OrbitControls( camera, renderer.domElement )
 }
 
 animate()
 function animate() {
     requestAnimationFrame( animate )
-    mesh.rotation.y = Math.PI / 4
-    // mesh.rotation.x = Math.PI / 6
-    // mesh.rotation.x = .61547
-    // renderer.render( scene, camera )
     composer.render()
 }

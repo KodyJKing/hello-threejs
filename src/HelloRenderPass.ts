@@ -2,9 +2,6 @@ import * as THREE from "three"
 import { WebGLRenderer, WebGLRenderTarget } from "three"
 import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass"
 
-function pixelRenderTarget() {
-}
-
 export default class HellRenderPass extends Pass {
 
     fsQuad: FullScreenQuad
@@ -12,7 +9,8 @@ export default class HellRenderPass extends Pass {
     scene: THREE.Scene
     camera: THREE.Camera
     rgbRenderTarget: WebGLRenderTarget
-    // normalRenderTarget: WebGLRenderTarget
+    normalRenderTarget: WebGLRenderTarget
+    normalMaterial: THREE.Material
 
     constructor( resolution: THREE.Vector2, scene: THREE.Scene, camera: THREE.Camera ) {
         super()
@@ -21,21 +19,10 @@ export default class HellRenderPass extends Pass {
         this.scene = scene
         this.camera = camera
 
-        const rgbRenderTarget = this.rgbRenderTarget = new WebGLRenderTarget(
-            resolution.x, resolution.y,
-            {
-                depthTexture: new THREE.DepthTexture(
-                    resolution.x,
-                    resolution.y
-                ),
-                depthBuffer: true
-            }
-        )
-        rgbRenderTarget.texture.format = THREE.RGBAFormat
-        rgbRenderTarget.texture.minFilter = THREE.NearestFilter
-        rgbRenderTarget.texture.magFilter = THREE.NearestFilter
-        rgbRenderTarget.texture.generateMipmaps = false
-        rgbRenderTarget.stencilBuffer = false
+        this.rgbRenderTarget = pixelRenderTarget( resolution, THREE.RGBAFormat, true )
+        this.normalRenderTarget = pixelRenderTarget( resolution, THREE.RGBFormat, false )
+
+        this.normalMaterial = new THREE.MeshNormalMaterial()
     }
 
     render(
@@ -46,10 +33,18 @@ export default class HellRenderPass extends Pass {
         renderer.setRenderTarget( this.rgbRenderTarget )
         renderer.render( this.scene, this.camera )
 
+        const overrideMaterial_old = this.scene.overrideMaterial
+        renderer.setRenderTarget( this.normalRenderTarget )
+        this.scene.overrideMaterial = this.normalMaterial
+        renderer.render( this.scene, this.camera )
+        this.scene.overrideMaterial = overrideMaterial_old
+
+
         // @ts-ignore
-        this.fsQuad.material.uniforms.tDiffuse.value = this.rgbRenderTarget.texture
-        // @ts-ignore
-        this.fsQuad.material.uniforms.tDepth.value = this.rgbRenderTarget.depthTexture
+        const uniforms = this.fsQuad.material.uniforms
+        uniforms.tDiffuse.value = this.rgbRenderTarget.texture
+        uniforms.tDepth.value = this.rgbRenderTarget.depthTexture
+        uniforms.tNormal.value = this.normalRenderTarget.texture
         if ( this.renderToScreen ) {
             renderer.setRenderTarget( null )
         } else {
@@ -64,6 +59,7 @@ export default class HellRenderPass extends Pass {
             uniforms: {
                 tDiffuse: { value: null },
                 tDepth: { value: null },
+                tNormal: { value: null },
                 resolution: {
                     value: new THREE.Vector4(
                         this.resolution.x,
@@ -85,11 +81,16 @@ export default class HellRenderPass extends Pass {
                 `
                 uniform sampler2D tDiffuse;
                 uniform sampler2D tDepth;
+                uniform sampler2D tNormal;
                 uniform vec4 resolution;
                 varying vec2 vUv;
 
                 float getDepth(int x, int y) {
                     return texture2D( tDepth, vUv + vec2(x, y) * resolution.zw ).r;
+                }
+
+                vec3 getNormal(int x, int y) {
+                    return texture2D( tNormal, vUv + vec2(x, y) * resolution.zw ).rgb;
                 }
 
                 float saturate(float x) {
@@ -99,19 +100,54 @@ export default class HellRenderPass extends Pass {
                 float depthEdgeIndicator() {
                     float depth = getDepth(0, 0);
                     float diff = 0.0;
-                    diff += abs(depth - getDepth(1, 0));
-                    diff += abs(depth - getDepth(-1, 0));
-                    diff += abs(depth - getDepth(0, 1));
-                    diff += abs(depth - getDepth(0, -1));
-                    return saturate(diff);
+                    diff += clamp(getDepth(1, 0) - depth, 0.0, 1.0);
+                    diff += clamp(getDepth(-1, 0) - depth, 0.0, 1.0);
+                    diff += clamp(getDepth(0, 1) - depth, 0.0, 1.0);
+                    diff += clamp(getDepth(0, -1) - depth, 0.0, 1.0);
+                    return saturate(diff * 100.0);
+                }
+
+                float normalEdgeIndicator() {
+                    vec3 normal = getNormal(0, 0);
+                    float diff = 0.0;
+                    diff += distance(normal, getNormal(1, 0));
+                    diff += distance(normal, getNormal(-1, 0));
+                    diff += distance(normal, getNormal(0, 1));
+                    diff += distance(normal, getNormal(0, -1));
+                    return saturate(diff * 100.0);
                 }
 
                 void main() {
                     vec4 texel = texture2D( tDiffuse, vUv );
-                    float edgeIndicator = depthEdgeIndicator();
-                    gl_FragColor = texel * (1.0 + edgeIndicator);
+                    float edgeIndicator = max(depthEdgeIndicator(), normalEdgeIndicator());
+                    float lum = dot(texel, vec4(.2126, .7152, .0722, .0));
+                    // float 
+                    gl_FragColor = texel * (1.0 + edgeIndicator * .5);
+                    // vec4 texel = texture2D( tNormal, vUv );
+                    // gl_FragColor = vec4(texel.rgb, 1.0);
                 }
                 `
         } )
     }
+}
+
+function pixelRenderTarget( resolution: THREE.Vector2, pixelFormat: THREE.PixelFormat, depthTexture: boolean ) {
+    const renderTarget = new WebGLRenderTarget(
+        resolution.x, resolution.y,
+        !depthTexture ?
+            undefined
+            : {
+                depthTexture: new THREE.DepthTexture(
+                    resolution.x,
+                    resolution.y
+                ),
+                depthBuffer: true
+            }
+    )
+    renderTarget.texture.format = pixelFormat
+    renderTarget.texture.minFilter = THREE.NearestFilter
+    renderTarget.texture.magFilter = THREE.NearestFilter
+    renderTarget.texture.generateMipmaps = false
+    renderTarget.stencilBuffer = false
+    return renderTarget
 }
