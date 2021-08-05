@@ -13,10 +13,15 @@ init()
 
 function init() {
 
-    let renderResolution = new Vector2( 256, 256 )
-    // let renderResolution = new Vector2( 1024, 1024 )
-    // let screenResolution = new Vector2( window.innerWidth, window.innerHeight )
-    let screenResolution = renderResolution.clone().multiplyScalar( 3 )
+    let screenResolution = new Vector2( window.innerWidth, window.innerHeight )
+    let renderResolution = screenResolution.clone().divideScalar( 4 )
+    renderResolution.x |= 0
+    renderResolution.y |= 0
+
+    // let renderResolution = new Vector2( 256, 256 )
+    // let screenResolution = renderResolution.clone().multiplyScalar( 3 )
+
+
     let aspectRatio = screenResolution.x / screenResolution.y
 
     // camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 10 )

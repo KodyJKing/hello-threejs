@@ -129,7 +129,7 @@ export default class RenderPixelatedPass extends Pass {
                     vec4 texel = texture2D( tDiffuse, vUv );
                     float dei = depthEdgeIndicator();
                     float nei = normalEdgeIndicator();
-                    float coefficient = (1.0 - dei * .125) * (1.0 + nei * .125);
+                    float coefficient = dei > 0.0 ? (1.0 - dei * .125) : (1.0 + nei * .125);
                     //float lum = dot(texel, vec4(.2126, .7152, .0722, .0));
                     gl_FragColor = texel * coefficient;
 
