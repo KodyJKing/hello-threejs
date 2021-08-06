@@ -95,7 +95,9 @@ export default class RenderPixelatedPass extends Pass {
 
                 // Only the shallower pixel should detect the normal edge.
                 float getNormalDistance(int x, int y, float depth, vec3 normal) {
-                    float adjust = clamp(sign(getDepth(x, y) + .0025 - depth), 0.0, 1.0);
+                    float depthDiff = getDepth(x, y) - depth;
+                    float adjust = clamp(sign(depthDiff * .25 + .0025), 0.0, 1.0);
+                    // return (1. - abs(dot(normal, getNormal(x, y)))) * adjust;
                     return distance(normal, getNormal(x, y)) * adjust;
                 }
 
@@ -107,7 +109,7 @@ export default class RenderPixelatedPass extends Pass {
                     diff += clamp(getDepth(-1, 0) - depth, 0.0, 1.0);
                     diff += clamp(getDepth(0, 1) - depth, 0.0, 1.0);
                     diff += clamp(getDepth(0, -1) - depth, 0.0, 1.0);
-                    return step(0.01, diff);
+                    return floor(smoothstep(0.01, 0.03, diff) * 2.) / 2.;
                 }
 
                 float normalEdgeIndicator() {
@@ -120,7 +122,7 @@ export default class RenderPixelatedPass extends Pass {
                     float diff = 0.0;
                     diff += sideEdge;
                     diff += getNormalDistance(0, -1, depth, normal);
-                    return step(.0001, diff);
+                    return step(0.1, diff);
                 }
 
                 void main() {

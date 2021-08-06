@@ -29,7 +29,7 @@ function pixelTex( tex: THREE.Texture ) {
 function init() {
 
     let screenResolution = new Vector2( window.innerWidth, window.innerHeight )
-    let renderResolution = screenResolution.clone().divideScalar( 4 )
+    let renderResolution = screenResolution.clone().divideScalar( 6 )
     renderResolution.x |= 0
     renderResolution.y |= 0
     let aspectRatio = screenResolution.x / screenResolution.y
