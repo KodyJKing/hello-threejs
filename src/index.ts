@@ -32,16 +32,13 @@ function init() {
     let renderResolution = screenResolution.clone().divideScalar( 4 )
     renderResolution.x |= 0
     renderResolution.y |= 0
-    // let renderResolution = new Vector2( 256, 256 )
-    // let screenResolution = renderResolution.clone().multiplyScalar( 3 )
     let aspectRatio = screenResolution.x / screenResolution.y
 
-    // camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 10 )
     camera = new THREE.OrthographicCamera( -aspectRatio, aspectRatio, 1, -1, .01, 10 )
-    camera.position.z = 0.9480823308542135
-    camera.position.y = 0.7907471388920719
+    camera.position.z = 1
+    camera.position.y = Math.tan( Math.PI / 6 )
     scene = new THREE.Scene()
-    // scene.background = new THREE.Color( 0x151729 )
+    scene.background = new THREE.Color( 0x151729 )
     // scene.background = new THREE.Color( 0xffffff )
 
     const loader = new THREE.TextureLoader()
@@ -69,7 +66,8 @@ function init() {
     const planeSideLength = 2
     let planeMesh = new THREE.Mesh(
         new THREE.PlaneGeometry( planeSideLength, planeSideLength ),
-        new THREE.MeshPhongMaterial( { map: tex_checker, side: THREE.DoubleSide } )
+        // new THREE.MeshPhongMaterial( { map: tex_checker, side: THREE.DoubleSide } )
+        new THREE.MeshPhongMaterial( { side: THREE.DoubleSide } )
     )
     planeMesh.receiveShadow = true
     planeMesh.rotation.x = -Math.PI / 2
@@ -94,7 +92,7 @@ function init() {
     directionalLight.position.set( 100, 100, 100 )
     directionalLight.castShadow = true
     directionalLight.shadow.radius = 0
-    directionalLight.shadow.mapSize.set( 1024, 1024 )
+    directionalLight.shadow.mapSize.set( 2048, 2048 )
     scene.add( directionalLight )
 
     scene.add( new THREE.AmbientLight( 0x2d3645, 1.25 ) )
@@ -107,6 +105,7 @@ function init() {
     // scene.add( pointLight )
 
     let spotLight = new THREE.SpotLight( 0xff8800, 2, 10, Math.PI / 12, .02, 2 )
+    // spotLight.position.set( .6, 1, 1 )
     spotLight.position.set( .6, 1, 1 )
     // spotLight.target = docecahedron
     spotLight.castShadow = true
@@ -123,7 +122,7 @@ function init() {
     composer = new EffectComposer( renderer )
     // composer.addPass( new RenderPass( scene, camera ) )
     composer.addPass( new RenderPixelatedPass( renderResolution, scene, camera ) )
-    // let bloomPass = new UnrealBloomPass( renderResolution, .5, 1, .25 )
+    // let bloomPass = new UnrealBloomPass( renderResolution, .5, .5, .5 )
     // composer.addPass( bloomPass )
     // composer.addPass( new GlitchPass() )
 

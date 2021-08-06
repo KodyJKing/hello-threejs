@@ -90,35 +90,37 @@ export default class RenderPixelatedPass extends Pass {
                 }
 
                 vec3 getNormal(int x, int y) {
-                    return texture2D( tNormal, vUv + vec2(x, y) * resolution.zw ).rgb;
+                    return texture2D( tNormal, vUv + vec2(x, y) * resolution.zw ).rgb * 2.0 - 1.0;
                 }
 
                 // Only the shallower pixel should detect the normal edge.
                 float getNormalDistance(int x, int y, float depth, vec3 normal) {
                     float adjust = clamp(sign(getDepth(x, y) + .0025 - depth), 0.0, 1.0);
-                    // float adjust = 1.0;
                     return distance(normal, getNormal(x, y)) * adjust;
                 }
 
                 float depthEdgeIndicator() {
                     float depth = getDepth(0, 0);
+                    vec3 normal = getNormal(0, 0);
                     float diff = 0.0;
                     diff += clamp(getDepth(1, 0) - depth, 0.0, 1.0);
                     diff += clamp(getDepth(-1, 0) - depth, 0.0, 1.0);
                     diff += clamp(getDepth(0, 1) - depth, 0.0, 1.0);
                     diff += clamp(getDepth(0, -1) - depth, 0.0, 1.0);
-                    return step(.01, diff);
+                    return step(0.01, diff);
                 }
 
                 float normalEdgeIndicator() {
                     float depth = getDepth(0, 0);
                     vec3 normal = getNormal(0, 0);
+                    int dx = int(clamp(sign(normal.x), 0.0, 1.0));
+                    float edgeAbove = getNormalDistance(-1, 1, depth, normal);
+                    dx = edgeAbove >= 1. ? dx : 1;
+                    float sideEdge = getNormalDistance(dx, 0, depth, normal);
                     float diff = 0.0;
-                    diff += getNormalDistance(1, 0, depth, normal);
-                    diff += getNormalDistance(-1, 0, depth, normal);
-                    diff += getNormalDistance(0, 1, depth, normal);
+                    diff += sideEdge;
                     diff += getNormalDistance(0, -1, depth, normal);
-                    return step(.01, diff);
+                    return step(.0001, diff);
                 }
 
                 void main() {
@@ -132,9 +134,8 @@ export default class RenderPixelatedPass extends Pass {
                     gl_FragColor = texel * coefficient;
                     // gl_FragColor = texel + dCol;
 
-                    // vec4 col = texture2D( tDiffuse, vUv );
-                    // float depth = texture2D( tDepth, vUv ).r;
-                    // gl_FragColor = vec4(vec3(depth), 1.0);
+                    // vec3 normal = getNormal(0, 0);
+                    // gl_FragColor = vec4(abs(dot(normal, vec3(0., 0., 1.))));
                 }
                 `
         } )
