@@ -44,14 +44,16 @@ function init() {
     const loader = new THREE.TextureLoader()
     const tex_warningStripes = pixelTex( loader.load( warningStipesURL ) )
     const tex_checker = pixelTex( loader.load( "https://threejsfundamentals.org/threejs/resources/images/checker.png" ) )
-    tex_checker.repeat.set( 10, 10 )
+    const tex_checker2 = pixelTex( loader.load( "https://threejsfundamentals.org/threejs/resources/images/checker.png" ) )
+    tex_checker.repeat.set( 5, 5 )
+    tex_checker2.repeat.set( 1.5, 1.5 )
 
     // Geometry
-    let normalMaterial = new THREE.MeshNormalMaterial()
-    // let phongMaterial = new THREE.MeshPhongMaterial( { map: tex_warningStripes } )
-    let phongMaterial = new THREE.MeshPhongMaterial( {} )
+    // let boxMaterial = new THREE.MeshNormalMaterial()
+    let boxMaterial = new THREE.MeshPhongMaterial( { map: tex_checker2 } )
+    // let boxMaterial = new THREE.MeshPhongMaterial()
     function addBox( boxSideLength: number, x: number, z: number, rotation: number ) {
-        let mesh = new THREE.Mesh( new THREE.BoxGeometry( boxSideLength, boxSideLength, boxSideLength ), phongMaterial )
+        let mesh = new THREE.Mesh( new THREE.BoxGeometry( boxSideLength, boxSideLength, boxSideLength ), boxMaterial )
         mesh.castShadow = true
         mesh.receiveShadow = true
         mesh.rotation.y = rotation
@@ -66,8 +68,11 @@ function init() {
     const planeSideLength = 2
     let planeMesh = new THREE.Mesh(
         new THREE.PlaneGeometry( planeSideLength, planeSideLength ),
-        // new THREE.MeshPhongMaterial( { map: tex_checker, side: THREE.DoubleSide } )
-        new THREE.MeshPhongMaterial( { side: THREE.DoubleSide } )
+        new THREE.MeshPhongMaterial( {
+            map: tex_checker,
+            // side: THREE.DoubleSide
+        } )
+        // new THREE.MeshPhongMaterial( { side: THREE.DoubleSide } )
     )
     planeMesh.receiveShadow = true
     planeMesh.rotation.x = -Math.PI / 2
@@ -95,7 +100,7 @@ function init() {
     directionalLight.shadow.mapSize.set( 2048, 2048 )
     scene.add( directionalLight )
 
-    scene.add( new THREE.AmbientLight( 0x2d3645, 1.25 ) )
+    scene.add( new THREE.AmbientLight( 0x2d3645, 1.5 ) )
 
     // let pointLight = new THREE.PointLight( 0xff8800, 2, 100, 2 )
     // pointLight.position.set( .6, .6, .8 )
@@ -104,17 +109,17 @@ function init() {
     // pointLight.shadow.mapSize.set( 1024, 1024 )
     // scene.add( pointLight )
 
-    let spotLight = new THREE.SpotLight( 0xff8800, 2, 10, Math.PI / 12, .02, 2 )
+    let spotLight = new THREE.SpotLight( 0xff8800, 1, 10, Math.PI / 12, .02, 2 )
     // spotLight.position.set( .6, 1, 1 )
-    spotLight.position.set( .6, 1, 1 )
+    spotLight.position.set( .6, 1.5, 1 )
     // spotLight.target = docecahedron
     spotLight.castShadow = true
     scene.add( spotLight )
 
     // Renderer
     renderer = new THREE.WebGLRenderer( { antialias: false } )
-    renderer.toneMapping = THREE.ReinhardToneMapping
-    renderer.toneMappingExposure = 1
+    // renderer.toneMapping = THREE.ReinhardToneMapping
+    // renderer.toneMappingExposure = 1
     renderer.shadowMap.enabled = true
     renderer.setSize( screenResolution.x, screenResolution.y )
     document.body.appendChild( renderer.domElement )
@@ -134,7 +139,11 @@ animate()
 function animate() {
     requestAnimationFrame( animate )
     let t = performance.now() / 1000
-    docecahedron.rotation.y = t
+    // docecahedron.rotation.y = t
+    docecahedron.rotation.setFromQuaternion( camera.quaternion )
+    docecahedron.rotation.x += Math.PI / 4
+    docecahedron.rotation.y += Math.PI / 4
+    docecahedron.rotation.z += Math.PI / 4
     docecahedron.position.y = .7 + Math.sin( t * 2 ) * .05
     composer.render()
 }

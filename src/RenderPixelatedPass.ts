@@ -109,7 +109,7 @@ export default class RenderPixelatedPass extends Pass {
                     diff += clamp(getDepth(-1, 0) - depth, 0.0, 1.0);
                     diff += clamp(getDepth(0, 1) - depth, 0.0, 1.0);
                     diff += clamp(getDepth(0, -1) - depth, 0.0, 1.0);
-                    return floor(smoothstep(0.01, 0.03, diff) * 2.) / 2.;
+                    return floor(smoothstep(0.01, 0.02, diff) * 2.) / 2.;
                 }
 
                 float normalEdgeIndicator() {
