@@ -10,21 +10,13 @@ import RenderPixelatedPass from "./RenderPixelatedPass"
 
 // @ts-ignore
 import warningStipesURL from "./assets/warningStripes.png"
+import { stopGoEased } from "./math"
 
 let camera: THREE.Camera, scene: THREE.Scene, renderer: THREE.WebGLRenderer, composer: EffectComposer
 
-let docecahedron: THREE.Mesh
+let crystalMesh: THREE.Mesh
 
 init()
-
-function pixelTex( tex: THREE.Texture ) {
-    tex.minFilter = THREE.NearestFilter
-    tex.magFilter = THREE.NearestFilter
-    tex.generateMipmaps = false
-    tex.wrapS = THREE.RepeatWrapping
-    tex.wrapT = THREE.RepeatWrapping
-    return tex
-}
 
 function init() {
 
@@ -80,23 +72,27 @@ function init() {
 
     {
         const radius = .2
-        const geometry = new THREE.DodecahedronGeometry( radius )
-        docecahedron = new THREE.Mesh(
+        // const geometry = new THREE.DodecahedronGeometry( radius )
+        const geometry = new THREE.IcosahedronGeometry( radius )
+        crystalMesh = new THREE.Mesh(
             geometry,
             new THREE.MeshPhongMaterial( {
-                color: 0x2379cf
+                color: 0x2379cf,
+                emissive: 0x143542,
+                shininess: 100,
+                specular: 0xffffff
             } )
         )
-        docecahedron.receiveShadow = true
-        docecahedron.castShadow = true
-        scene.add( docecahedron )
+        crystalMesh.receiveShadow = true
+        crystalMesh.castShadow = true
+        scene.add( crystalMesh )
     }
 
     // Lights
     let directionalLight = new THREE.DirectionalLight( 0xfffc9c, .5 )
     directionalLight.position.set( 100, 100, 100 )
     directionalLight.castShadow = true
-    directionalLight.shadow.radius = 0
+    // directionalLight.shadow.radius = 0
     directionalLight.shadow.mapSize.set( 2048, 2048 )
     scene.add( directionalLight )
 
@@ -140,10 +136,22 @@ function animate() {
     requestAnimationFrame( animate )
     let t = performance.now() / 1000
     // docecahedron.rotation.y = t
-    docecahedron.rotation.setFromQuaternion( camera.quaternion )
-    docecahedron.rotation.x += Math.PI / 4
-    docecahedron.rotation.y += Math.PI / 4
-    docecahedron.rotation.z += Math.PI / 4
-    docecahedron.position.y = .7 + Math.sin( t * 2 ) * .05
+    // docecahedron.rotation.setFromQuaternion( camera.quaternion )
+    // docecahedron.rotation.x += Math.PI / 4
+    // docecahedron.rotation.y += Math.PI / 4
+    // docecahedron.rotation.z += Math.PI / 4
+    let mat = ( crystalMesh.material as THREE.MeshPhongMaterial )
+    mat.emissiveIntensity = Math.sin( t * 3 ) * .5 + .5
+    crystalMesh.position.y = .7 + Math.sin( t * 2 ) * .05
+    crystalMesh.rotation.y = stopGoEased( t, 3, 4 ) * Math.PI / 2
     composer.render()
+}
+
+function pixelTex( tex: THREE.Texture ) {
+    tex.minFilter = THREE.NearestFilter
+    tex.magFilter = THREE.NearestFilter
+    tex.generateMipmaps = false
+    tex.wrapS = THREE.RepeatWrapping
+    tex.wrapT = THREE.RepeatWrapping
+    return tex
 }
