@@ -97,7 +97,6 @@ export default class RenderPixelatedPass extends Pass {
                 float getNormalDistance(int x, int y, float depth, vec3 normal) {
                     float depthDiff = getDepth(x, y) - depth;
                     float adjust = clamp(sign(depthDiff * .25 + .0025), 0.0, 1.0);
-                    // return (1. - abs(dot(normal, getNormal(x, y)))) * adjust;
                     return distance(normal, getNormal(x, y)) * adjust;
                 }
 
@@ -125,19 +124,21 @@ export default class RenderPixelatedPass extends Pass {
                     return step(0.1, diff);
                 }
 
+                float lum(vec4 color) {
+                    vec4 weights = vec4(.2126, .7152, .0722, .0);
+                    return dot(color, weights);
+                }
+
                 void main() {
                     vec4 texel = texture2D( tDiffuse, vUv );
+                    float tLum = lum(texel);
+                    float sNei = sign(tLum - .3) + .7;
+                    float sDei = sign(tLum - .3) + .5;
                     float dei = depthEdgeIndicator();
                     float nei = normalEdgeIndicator();
-                    // float coefficient = dei > 0.0 ? (1.0 - dei * .25) : (1.0 + nei * .25);
-                    float coefficient = dei > 0.0 ? (1.0 - dei * .5) : (1.0 + nei * .5);
-                    // float dCol = dei > 0.0 ? -dei * .2 : nei * .05;
-                    // float dCol = -dei * .2 + nei * .05;
+                    float coefficient = dei > 0.0 ? (1.0 - sDei * dei * .3) : (1.0 + sNei * nei * .25);
+                    // float coefficient = dei > 0.0 ? (1.0 - dei * .5) : (1.0 + nei * .5);
                     gl_FragColor = texel * coefficient;
-                    // gl_FragColor = texel + dCol;
-
-                    // vec3 normal = getNormal(0, 0);
-                    // gl_FragColor = vec4(abs(dot(normal, vec3(0., 0., 1.))));
                 }
                 `
         } )
