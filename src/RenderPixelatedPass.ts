@@ -1,5 +1,5 @@
 import * as THREE from "three"
-import { WebGLRenderer, WebGLRenderTarget } from "three"
+import { Vector2, WebGLRenderer, WebGLRenderTarget } from "three"
 import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass"
 
 export default class RenderPixelatedPass extends Pass {
@@ -27,8 +27,7 @@ export default class RenderPixelatedPass extends Pass {
 
     render(
         renderer: WebGLRenderer,
-        writeBuffer: WebGLRenderTarget,
-        readBuffer: WebGLRenderTarget
+        writeBuffer: WebGLRenderTarget
     ) {
         renderer.setRenderTarget( this.rgbRenderTarget )
         renderer.render( this.scene, this.camera )
@@ -39,12 +38,12 @@ export default class RenderPixelatedPass extends Pass {
         renderer.render( this.scene, this.camera )
         this.scene.overrideMaterial = overrideMaterial_old
 
-
         // @ts-ignore
         const uniforms = this.fsQuad.material.uniforms
         uniforms.tDiffuse.value = this.rgbRenderTarget.texture
         uniforms.tDepth.value = this.rgbRenderTarget.depthTexture
         uniforms.tNormal.value = this.normalRenderTarget.texture
+
         if ( this.renderToScreen ) {
             renderer.setRenderTarget( null )
         } else {
@@ -129,15 +128,19 @@ export default class RenderPixelatedPass extends Pass {
                     return dot(color, weights);
                 }
 
+                float smoothSign(float x, float radius) {
+                    return smoothstep(-radius, radius, x) * 2.0 - 1.0;
+                }
+
                 void main() {
                     vec4 texel = texture2D( tDiffuse, vUv );
                     float tLum = lum(texel);
-                    float sNei = sign(tLum - .3) + .7;
-                    float sDei = sign(tLum - .3) + .5;
+                    float sNei = smoothSign(tLum - .3, .1) + .7;
+                    float sDei = smoothSign(tLum - .3, .1) + .5;
                     float dei = depthEdgeIndicator();
                     float nei = normalEdgeIndicator();
                     float coefficient = dei > 0.0 ? (1.0 - sDei * dei * .3) : (1.0 + sNei * nei * .25);
-                    // float coefficient = dei > 0.0 ? (1.0 - dei * .5) : (1.0 + nei * .5);
+                    //float coefficient = dei > 0.0 ? (1.0 - dei * .5) : (1.0 + nei * .5);
                     gl_FragColor = texel * coefficient;
                 }
                 `

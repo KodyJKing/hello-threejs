@@ -1,13 +1,21 @@
 import * as THREE from "three"
 import { GreaterEqualDepth, Vector2 } from "three"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
+
+import { MapControls, OrbitControls } from "three/examples/jsm/controls/OrbitControls"
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
+
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass'
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
+import { BloomPass } from 'three/examples/jsm/postprocessing/BloomPass'
+import { BokehPass } from 'three/examples//jsm/postprocessing/BokehPass'
+
+
 import HelloWorldPass from "./HelloWorldPass"
 import RenderPixelatedPass from "./RenderPixelatedPass"
+import PixelatePass from "./PixelatePass"
+
 import { stopGoEased } from "./math"
 
 // @ts-ignore
@@ -16,11 +24,10 @@ import warningStipesURL from "./assets/warningStripes.png"
 import mechURL from "./assets/mech.fbx"
 
 let camera: THREE.Camera, scene: THREE.Scene, renderer: THREE.WebGLRenderer, composer: EffectComposer
-
+let controls: OrbitControls
 let crystalMesh: THREE.Mesh, mech: THREE.Object3D
 
 init()
-
 function init() {
 
     let screenResolution = new Vector2( window.innerWidth, window.innerHeight )
@@ -108,7 +115,8 @@ function init() {
                 color: 0x2379cf,
                 emissive: 0x143542,
                 shininess: 100,
-                specular: 0xffffff
+                specular: 0xffffff,
+                // opacity: 0.5
             } )
         )
         crystalMesh.receiveShadow = true
@@ -147,22 +155,27 @@ function init() {
     composer = new EffectComposer( renderer )
     // composer.addPass( new RenderPass( scene, camera ) )
     composer.addPass( new RenderPixelatedPass( renderResolution, scene, camera ) )
-    let bloomPass = new UnrealBloomPass( renderResolution, .5, .5, .9 )
+    let bloomPass = new UnrealBloomPass( screenResolution, .4, .1, .9 )
     composer.addPass( bloomPass )
+    composer.addPass( new PixelatePass( renderResolution ) )
 
-    let controls = new OrbitControls( camera, renderer.domElement )
+    controls = new OrbitControls( camera, renderer.domElement )
     controls.target.set( 0, .25, 0 )
     controls.update()
+    controls.minPolarAngle = controls.maxPolarAngle = controls.getPolarAngle()
 }
 
 animate()
 function animate() {
     requestAnimationFrame( animate )
     let t = performance.now() / 1000
+
     let mat = ( crystalMesh.material as THREE.MeshPhongMaterial )
     mat.emissiveIntensity = Math.sin( t * 3 ) * .5 + .5
     crystalMesh.position.y = .7 + Math.sin( t * 2 ) * .05
-    crystalMesh.rotation.y = stopGoEased( t, 3, 4 ) * Math.PI / 2
+    // crystalMesh.rotation.y = stopGoEased( t, 3, 4 ) * Math.PI / 2
+    crystalMesh.rotation.y = stopGoEased( t, 2, 4 ) * 2 * Math.PI
+
     // if ( mech )
     //     mech.rotation.y = Math.floor( t * 8 ) * Math.PI / 32
     composer.render()
