@@ -1,5 +1,5 @@
 import * as THREE from "three"
-import { Vector2, WebGLRenderer, WebGLRenderTarget } from "three"
+import { Vector2, Vector3, Vector4, WebGLRenderer, WebGLRenderTarget } from "three"
 import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass"
 
 export default class RenderPixelatedPass extends Pass {
@@ -12,6 +12,8 @@ export default class RenderPixelatedPass extends Pass {
     normalRenderTarget: WebGLRenderTarget
     normalMaterial: THREE.Material
 
+    prevPositions: WeakMap<THREE.Object3D, Vector3>
+
     constructor( resolution: THREE.Vector2, scene: THREE.Scene, camera: THREE.Camera ) {
         super()
         this.resolution = resolution
@@ -23,12 +25,51 @@ export default class RenderPixelatedPass extends Pass {
         this.normalRenderTarget = pixelRenderTarget( resolution, THREE.RGBFormat, false )
 
         this.normalMaterial = new THREE.MeshNormalMaterial()
+
+        this.prevPositions = new WeakMap()
     }
 
     render(
         renderer: WebGLRenderer,
         writeBuffer: WebGLRenderTarget
     ) {
+        let projMat = this.camera.projectionMatrix.clone()
+        let viewMat = this.camera.matrixWorldInverse
+        let vpMat = projMat.multiply(viewMat)
+        let vpInvMat = vpMat.clone().invert()
+        let positionResets: [Vector3, Vector3][] = []
+        this.scene.traverse(child => {
+            if (child instanceof THREE.Mesh) {
+
+                let posPrev = this.prevPositions.get(child)
+                this.prevPositions.set(child, child.position.clone())
+                if (!posPrev)
+                    return
+                    
+                let pos = child.position 
+                let pos4 = new Vector4(pos.x, pos.y, pos.z, 1)
+                let imagePos = pos4.applyMatrix4(vpMat)
+                let {x, y, z, w} = imagePos
+                x /= w, y /= w, z /= w
+
+                // console.log(x.toFixed(2) + ", " + y.toFixed(2))
+
+                let resx = this.resolution.x, resy = this.resolution.y
+                let x2 = Math.floor(x * resx * .5) / resx * 2
+                let y2 = Math.floor(y * resy * .5) / resy * 2
+                let dx = x2 - x, dy = y2 - y
+                let imageDiff = new Vector4(dx * w, dy * w, 0, 0)
+                // let imageDiff = new Vector4(dx, dy, 0, 0)
+                
+                positionResets.push([child.position, child.position.clone()])
+                
+                let worldDiff = imageDiff.applyMatrix4(vpInvMat)
+                let worldDiff3 = new Vector3(worldDiff.x, worldDiff.y, worldDiff.z)
+
+                child.position.add(worldDiff3)
+            }
+        })
+
         renderer.setRenderTarget( this.rgbRenderTarget )
         renderer.render( this.scene, this.camera )
 
@@ -51,6 +92,9 @@ export default class RenderPixelatedPass extends Pass {
             if ( this.clear ) renderer.clear()
         }
         this.fsQuad.render( renderer )
+
+        for (let [pos, oldPos] of positionResets)
+            pos.copy(oldPos)
     }
 
     material() {
@@ -71,8 +115,18 @@ export default class RenderPixelatedPass extends Pass {
             vertexShader:
                 `
                 varying vec2 vUv;
+                uniform vec4 resolution;
                 void main() {
                     vUv = uv;
+
+                    // vec4 worldPos = modelMatrix * vec4( position, 1.0 );
+                    // vec4 imagePos = projectionMatrix * viewMatrix * worldPos;
+                    // vec2 imagePos2 = round(imagePos.xy * resolution.xy) * resolution.zw;
+                    // vec4 imageDiff = vec4(imagePos2, 0.0, 0.0) - imagePos;
+                    // vec4 worldDiff = inverse(projectionMatrix * viewMatrix) * imageDiff;
+                    // vec3 position2 = position + worldDiff.xyz;
+                    // gl_Position = projectionMatrix * modelViewMatrix * vec4( position2, 1.0 );
+                    
                     gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
                 }
                 `,
@@ -146,14 +200,13 @@ export default class RenderPixelatedPass extends Pass {
                     float tLum = lum(texel);
                     float sNei = smoothSign(tLum - .3, .1) + .7;
                     float sDei = smoothSign(tLum - .3, .1) + .5;
-                    // float sNei = smoothSign(tLum - .3, .5) + .7;
-                    // float sDei = smoothSign(tLum - .3, .5) + .5;
+                    // float sNei = 1.0;
+                    // float sDei = 1.0;
 
                     float dei = depthEdgeIndicator();
                     float nei = normalEdgeIndicator();
 
                     float coefficient = dei > 0.0 ? (1.0 - sDei * dei * .3) : (1.0 + sNei * nei * .25);
-                    //float coefficient = dei > 0.0 ? (1.0 - dei * .5) : (1.0 + nei * .5);
 
                     gl_FragColor = texel * coefficient;
                 }

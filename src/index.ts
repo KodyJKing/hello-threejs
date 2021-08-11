@@ -29,6 +29,7 @@ function init() {
 
     let screenResolution = new Vector2( window.innerWidth, window.innerHeight )
     let renderResolution = screenResolution.clone().divideScalar( 6 )
+    // let renderResolution = screenResolution.clone().divideScalar( 4 )
     renderResolution.x |= 0
     renderResolution.y |= 0
     let aspectRatio = screenResolution.x / screenResolution.y
@@ -112,9 +113,11 @@ function init() {
                 emissive: 0x143542,
                 shininess: 100,
                 specular: 0xffffff,
-                // opacity: 0.5
+                // opacity: 0.8,
+                // transparent: true
             } )
         )
+        crystalMesh.name = "crystal"
         crystalMesh.receiveShadow = true
         crystalMesh.castShadow = true
         scene.add( crystalMesh )
@@ -131,15 +134,15 @@ function init() {
         scene.add( directionalLight )
     }
     {
-        // let spotLight = new THREE.SpotLight( 0xff8800, 1, 10, Math.PI / 16, .02, 2 )
-        let spotLight = new THREE.SpotLight( 0xff8800, 1, 10, Math.PI / 16, 0, 2 )
+        let spotLight = new THREE.SpotLight( 0xff8800, 1, 10, Math.PI / 16, .02, 2 )
+        // let spotLight = new THREE.SpotLight( 0xff8800, 1, 10, Math.PI / 16, 0, 2 )
         spotLight.position.set( 2, 2, 0 )
         let target = spotLight.target //= new THREE.Object3D()
         scene.add( target )
         target.position.set( 0, 0, 0 )
         spotLight.castShadow = true
         scene.add( spotLight )
-        spotLight.shadow.radius = 0
+        // spotLight.shadow.radius = 0
     }
 
     // Renderer
@@ -163,18 +166,22 @@ function init() {
     camera.position.y = 2 * Math.tan( Math.PI / 6 )
     controls.update()
     controls.minPolarAngle = controls.maxPolarAngle = controls.getPolarAngle()
+    // @ts-ignore
+    controls.listenToKeyEvents(window)
 }
 
 animate()
 function animate() {
     requestAnimationFrame( animate )
     let t = performance.now() / 1000
+    let fps = 16
+    t = ((t * fps) | 0) /  fps
 
     let mat = ( crystalMesh.material as THREE.MeshPhongMaterial )
     mat.emissiveIntensity = Math.sin( t * 3 ) * .5 + .5
-    crystalMesh.position.y = .7 + Math.sin( t * 2 ) * .05
-    // crystalMesh.rotation.y = stopGoEased( t, 3, 4 ) * Math.PI / 2
-    crystalMesh.rotation.y = stopGoEased( t, 2, 4 ) * 2 * Math.PI
+    crystalMesh.position.y = .7 + Math.sin( t * 4 ) * .05
+    crystalMesh.rotation.y = stopGoEased( t, 3, 4 ) * Math.PI / 2
+    // crystalMesh.rotation.y = stopGoEased( t, 2, 4 ) * 2 * Math.PI
 
     // if ( mech )
     //     mech.rotation.y = Math.floor( t * 8 ) * Math.PI / 32
