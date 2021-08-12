@@ -48,47 +48,47 @@ function init() {
     tex_checker2.repeat.set( 1.5, 1.5 )
 
     // Geometry
-    {
-        const fbxLoader = new FBXLoader()
-        let mechMaterial = new THREE.MeshPhongMaterial( {
-            // map: tex_checker2,
-            color: 0x808080,
-            specular: 0xffffff,
-            shininess: 100
-        } )
-        fbxLoader.load( mechURL, obj => {
-            // obj.scale.set( .005, .005, .005 )
-            obj.scale.set( .001, .001, .001 )
-            obj.traverse( child => {
-                // @ts-ignore
-                if ( child instanceof THREE.Mesh ) {
-                    child.castShadow = true
-                    child.receiveShadow = true
-                    child.material = mechMaterial
-                }
-            } )
-            console.log( obj )
-            mech = obj
-            scene.add( obj )
-        } )
-    }
     // {
-    //     // let boxMaterial = new THREE.MeshNormalMaterial()
-    //     let boxMaterial = new THREE.MeshPhongMaterial( { map: tex_checker2 } )
-    //     // let boxMaterial = new THREE.MeshPhongMaterial()
-    //     function addBox( boxSideLength: number, x: number, z: number, rotation: number ) {
-    //         let mesh = new THREE.Mesh( new THREE.BoxGeometry( boxSideLength, boxSideLength, boxSideLength ), boxMaterial )
-    //         mesh.castShadow = true
-    //         mesh.receiveShadow = true
-    //         mesh.rotation.y = rotation
-    //         mesh.position.y = boxSideLength / 2
-    //         mesh.position.set( x, boxSideLength / 2 + .0001, z )
-    //         scene.add( mesh )
-    //         return mesh
-    //     }
-    //     addBox( .4, 0, 0, Math.PI / 4 )
-    //     // addBox( .2, -.4, -.15, Math.PI / 4 )
+    //     const fbxLoader = new FBXLoader()
+    //     let mechMaterial = new THREE.MeshPhongMaterial( {
+    //         // map: tex_checker2,
+    //         color: 0x808080,
+    //         specular: 0xffffff,
+    //         shininess: 100
+    //     } )
+    //     fbxLoader.load( mechURL, obj => {
+    //         // obj.scale.set( .005, .005, .005 )
+    //         obj.scale.set( .001, .001, .001 )
+    //         obj.traverse( child => {
+    //             // @ts-ignore
+    //             if ( child instanceof THREE.Mesh ) {
+    //                 child.castShadow = true
+    //                 child.receiveShadow = true
+    //                 child.material = mechMaterial
+    //             }
+    //         } )
+    //         console.log( obj )
+    //         mech = obj
+    //         scene.add( obj )
+    //     } )
     // }
+    {
+        // let boxMaterial = new THREE.MeshNormalMaterial()
+        let boxMaterial = new THREE.MeshPhongMaterial( { map: tex_checker2 } )
+        // let boxMaterial = new THREE.MeshPhongMaterial()
+        function addBox( boxSideLength: number, x: number, z: number, rotation: number ) {
+            let mesh = new THREE.Mesh( new THREE.BoxGeometry( boxSideLength, boxSideLength, boxSideLength ), boxMaterial )
+            mesh.castShadow = true
+            mesh.receiveShadow = true
+            mesh.rotation.y = rotation
+            mesh.position.y = boxSideLength / 2
+            mesh.position.set( x, boxSideLength / 2 + .0001, z )
+            scene.add( mesh )
+            return mesh
+        }
+        addBox( .4, 0, 0, Math.PI / 4 )
+        addBox( .2, -.4, -.15, Math.PI / 4 )
+    }
     {
         const planeSideLength = 2
         let planeMesh = new THREE.Mesh(
@@ -103,26 +103,26 @@ function init() {
         planeMesh.rotation.x = -Math.PI / 2
         scene.add( planeMesh )
     }
-    // {
-    //     const radius = .2
-    //     // const geometry = new THREE.DodecahedronGeometry( radius )
-    //     const geometry = new THREE.IcosahedronGeometry( radius )
-    //     crystalMesh = new THREE.Mesh(
-    //         geometry,
-    //         new THREE.MeshPhongMaterial( {
-    //             color: 0x2379cf,
-    //             emissive: 0x143542,
-    //             shininess: 100,
-    //             specular: 0xffffff,
-    //             // opacity: 0.8,
-    //             // transparent: true
-    //         } )
-    //     )
-    //     crystalMesh.name = "crystal"
-    //     crystalMesh.receiveShadow = true
-    //     crystalMesh.castShadow = true
-    //     scene.add( crystalMesh )
-    // }
+    {
+        const radius = .2
+        // const geometry = new THREE.DodecahedronGeometry( radius )
+        const geometry = new THREE.IcosahedronGeometry( radius )
+        crystalMesh = new THREE.Mesh(
+            geometry,
+            new THREE.MeshPhongMaterial( {
+                color: 0x2379cf,
+                emissive: 0x143542,
+                shininess: 100,
+                specular: 0xffffff,
+                // opacity: 0.8,
+                // transparent: true
+            } )
+        )
+        crystalMesh.name = "crystal"
+        crystalMesh.receiveShadow = true
+        crystalMesh.castShadow = true
+        scene.add( crystalMesh )
+    }
 
     // Lights
     scene.add( new THREE.AmbientLight( 0x2d3645, 1.5 ) )
@@ -178,11 +178,11 @@ function animate() {
     let fps = 16
     t = ((t * fps) | 0) /  fps
 
-    // let mat = ( crystalMesh.material as THREE.MeshPhongMaterial )
-    // mat.emissiveIntensity = Math.sin( t * 3 ) * .5 + .5
-    // crystalMesh.position.y = .7 + Math.sin( t * 4 ) * .05
-    // crystalMesh.rotation.y = stopGoEased( t, 3, 4 ) * Math.PI / 2
-    // crystalMesh.rotation.y = stopGoEased( t, 2, 4 ) * 2 * Math.PI
+    let mat = ( crystalMesh.material as THREE.MeshPhongMaterial )
+    mat.emissiveIntensity = Math.sin( t * 3 ) * .5 + .5
+    crystalMesh.position.y = .7 + Math.sin( t * 4 ) * .05
+    crystalMesh.rotation.y = stopGoEased( t, 3, 4 ) * Math.PI / 2
+    crystalMesh.rotation.y = stopGoEased( t, 2, 4 ) * 2 * Math.PI
 
     // if ( mech )
     //     mech.rotation.y = Math.floor( t * 8 ) * Math.PI / 32
