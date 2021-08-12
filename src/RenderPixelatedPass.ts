@@ -12,8 +12,6 @@ export default class RenderPixelatedPass extends Pass {
     normalRenderTarget: WebGLRenderTarget
     normalMaterial: THREE.Material
 
-    prevPositions: WeakMap<THREE.Object3D, Vector3>
-
     constructor( resolution: THREE.Vector2, scene: THREE.Scene, camera: THREE.Camera ) {
         super()
         this.resolution = resolution
@@ -25,8 +23,6 @@ export default class RenderPixelatedPass extends Pass {
         this.normalRenderTarget = pixelRenderTarget( resolution, THREE.RGBFormat, false )
 
         this.normalMaterial = new THREE.MeshNormalMaterial()
-
-        this.prevPositions = new WeakMap()
     }
 
     render(
@@ -38,37 +34,42 @@ export default class RenderPixelatedPass extends Pass {
         let vpMat = projMat.multiply(viewMat)
         let vpInvMat = vpMat.clone().invert()
         let positionResets: [Vector3, Vector3][] = []
-        this.scene.traverse(child => {
-            if (child instanceof THREE.Mesh) {
+        // this.scene.traverse(child => {
+        //     if (child instanceof THREE.Mesh) {
+        //         let pos = child.position 
 
-                let posPrev = this.prevPositions.get(child)
-                this.prevPositions.set(child, child.position.clone())
-                if (!posPrev)
-                    return
-                    
-                let pos = child.position 
-                let pos4 = new Vector4(pos.x, pos.y, pos.z, 1)
-                let imagePos = pos4.applyMatrix4(vpMat)
-                let {x, y, z, w} = imagePos
-                x /= w, y /= w, z /= w
+        //         let pos4 = new Vector4(pos.x, pos.y, pos.z, 1)
+        //         let imagePos = pos4.applyMatrix4(vpMat)
+        //         let {x, y, z, w} = imagePos
+        //         x /= w, y /= w, z /= w
 
-                // console.log(x.toFixed(2) + ", " + y.toFixed(2))
+        //         // console.log(x.toFixed(2) + ", " + y.toFixed(2))
 
-                let resx = this.resolution.x, resy = this.resolution.y
-                let x2 = Math.floor(x * resx * .5) / resx * 2
-                let y2 = Math.floor(y * resy * .5) / resy * 2
-                let dx = x2 - x, dy = y2 - y
-                let imageDiff = new Vector4(dx * w, dy * w, 0, 0)
-                // let imageDiff = new Vector4(dx, dy, 0, 0)
+        //         // let initialOffset = child.userData.initialOffset
+        //         // if (initialOffset) {
+        //         //     x += initialOffset.x / w
+        //         //     y += initialOffset.y / w
+        //         // }
+
+        //         let resx = this.resolution.x, resy = this.resolution.y
+        //         let x2 = Math.floor(x * resx * .5) / resx * 2
+        //         let y2 = Math.floor(y * resy * .5) / resy * 2
+        //         let dx = x2 - x, dy = y2 - y
+        //         let imageOffset = new Vector4(dx * w, dy * w, 0, 0)
+
+        //         // if (initialOffset)
+        //         //     imageOffset.add(initialOffset)
+        //         // else
+        //         //     child.userData.initialOffset = imageOffset.clone()
                 
-                positionResets.push([child.position, child.position.clone()])
+        //         positionResets.push([child.position, child.position.clone()])
                 
-                let worldDiff = imageDiff.applyMatrix4(vpInvMat)
-                let worldDiff3 = new Vector3(worldDiff.x, worldDiff.y, worldDiff.z)
+        //         let worldOffset = imageOffset.applyMatrix4(vpInvMat)
+        //         let worldOffset3 = new Vector3(worldOffset.x, worldOffset.y, worldOffset.z)
 
-                child.position.add(worldDiff3)
-            }
-        })
+        //         child.position.add(worldOffset3)
+        //     }
+        // })
 
         renderer.setRenderTarget( this.rgbRenderTarget )
         renderer.render( this.scene, this.camera )
@@ -118,15 +119,6 @@ export default class RenderPixelatedPass extends Pass {
                 uniform vec4 resolution;
                 void main() {
                     vUv = uv;
-
-                    // vec4 worldPos = modelMatrix * vec4( position, 1.0 );
-                    // vec4 imagePos = projectionMatrix * viewMatrix * worldPos;
-                    // vec2 imagePos2 = round(imagePos.xy * resolution.xy) * resolution.zw;
-                    // vec4 imageDiff = vec4(imagePos2, 0.0, 0.0) - imagePos;
-                    // vec4 worldDiff = inverse(projectionMatrix * viewMatrix) * imageDiff;
-                    // vec3 position2 = position + worldDiff.xyz;
-                    // gl_Position = projectionMatrix * modelViewMatrix * vec4( position2, 1.0 );
-                    
                     gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
                 }
                 `,
