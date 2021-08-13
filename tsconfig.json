@@ -1,0 +1,19 @@
+{
+    "include": [
+        "src"
+    ],
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ES2020",
+        "declaration": true,
+        "outDir": "lib",
+        "rootDir": "src",
+        "strict": true,
+        "noImplicitAny": false,
+        "allowJs": true,
+        "allowSyntheticDefaultImports": true,
+        "experimentalDecorators": true,
+        "esModuleInterop": true,
+        "preserveWatchOutput": true
+    }
+}

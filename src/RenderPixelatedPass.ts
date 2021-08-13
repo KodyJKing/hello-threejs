@@ -92,11 +92,18 @@ export default class RenderPixelatedPass extends Pass {
                     return texture2D( tNormal, vUv + vec2(x, y) * resolution.zw ).rgb * 2.0 - 1.0;
                 }
 
-                // Only the shallower pixel should detect the normal edge.
-                float getNormalDistance(int x, int y, float depth, vec3 normal) {
+                float neighborNormalEdgeIndicator(int x, int y, float depth, vec3 normal) {
                     float depthDiff = getDepth(x, y) - depth;
-                    float adjust = clamp(sign(depthDiff * .25 + .0025), 0.0, 1.0);
-                    return distance(normal, getNormal(x, y)) * adjust;
+                    
+                    // Edge pixels should yield to faces closer to the 
+                    vec3 normalEdgeBias = vec3(1., 1., 1.); // This should probably be a parameter.
+                    float normalDiff = dot(normal - getNormal(x, y), normalEdgeBias);
+                    float normalIndicator = clamp(smoothstep(-.01, .01, normalDiff), 0.0, 1.0);
+                    
+                    // Only the shallower pixel should detect the normal edge.
+                    float depthIndicator = clamp(sign(depthDiff * .25 + .0025), 0.0, 1.0);
+
+                    return distance(normal, getNormal(x, y)) * depthIndicator * normalIndicator;
                 }
 
                 float depthEdgeIndicator() {
@@ -114,21 +121,14 @@ export default class RenderPixelatedPass extends Pass {
                     float depth = getDepth(0, 0);
                     vec3 normal = getNormal(0, 0);
                     
-                    float diff = 0.0;
+                    float indicator = 0.0;
 
-                    int dx = int(clamp(sign(normal.x), 0.0, 1.0));
-                    float edgeAbove = getNormalDistance(-1, 1, depth, normal);
-                    dx = edgeAbove >= 1. ? dx : 1;
-                    float sideEdge = getNormalDistance(dx, 0, depth, normal);
-                    diff += sideEdge;
+                    indicator += neighborNormalEdgeIndicator(0, -1, depth, normal);
+                    indicator += neighborNormalEdgeIndicator(0, 1, depth, normal);
+                    indicator += neighborNormalEdgeIndicator(-1, 0, depth, normal);
+                    indicator += neighborNormalEdgeIndicator(1, 0, depth, normal);
 
-                    diff += getNormalDistance(0, -1, depth, normal);
-
-                    // diff += getNormalDistance(0, 1, depth, normal);
-                    // diff += getNormalDistance(-1, 0, depth, normal);
-                    // diff += getNormalDistance(1, 0, depth, normal);
-
-                    return step(0.1, diff);
+                    return step(0.1, indicator);
                 }
 
                 float lum(vec4 color) {
@@ -144,16 +144,15 @@ export default class RenderPixelatedPass extends Pass {
                     vec4 texel = texture2D( tDiffuse, vUv );
 
                     float tLum = lum(texel);
-                    float sNei = smoothSign(tLum - .3, .1) + .7;
-                    float sDei = smoothSign(tLum - .3, .1) + .5;
-                    // float sNei = smoothSign(tLum - .3, .5) + .7;
-                    // float sDei = smoothSign(tLum - .3, .5) + .5;
+                    // float normalEdgeCoefficient = (smoothSign(tLum - .3, .1) + .7) * .25;
+                    // float depthEdgeCoefficient = (smoothSign(tLum - .3, .1) + .7) * .3;
+                    float normalEdgeCoefficient = .3;
+                    float depthEdgeCoefficient = .4;
 
                     float dei = depthEdgeIndicator();
                     float nei = normalEdgeIndicator();
 
-                    float coefficient = dei > 0.0 ? (1.0 - sDei * dei * .3) : (1.0 + sNei * nei * .25);
-                    //float coefficient = dei > 0.0 ? (1.0 - dei * .5) : (1.0 + nei * .5);
+                    float coefficient = dei > 0.0 ? (1.0 - depthEdgeCoefficient * dei) : (1.0 + normalEdgeCoefficient * nei);
 
                     gl_FragColor = texel * coefficient;
                 }

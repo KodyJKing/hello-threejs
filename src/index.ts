@@ -25,6 +25,8 @@ let controls: OrbitControls
 let crystalMesh: THREE.Mesh, mech: THREE.Object3D
 
 init()
+animate()
+
 function init() {
 
     let screenResolution = new Vector2( window.innerWidth, window.innerHeight )
@@ -37,6 +39,28 @@ function init() {
     scene = new THREE.Scene()
     scene.background = new THREE.Color( 0x151729 )
     // scene.background = new THREE.Color( 0xffffff )
+
+    // Renderer
+    renderer = new THREE.WebGLRenderer( { antialias: false } )
+    // renderer.toneMapping = THREE.ACESFilmicToneMapping
+    // renderer.toneMappingExposure = .75
+    renderer.shadowMap.enabled = true
+    renderer.setSize( screenResolution.x, screenResolution.y )
+    document.body.appendChild( renderer.domElement )
+
+    composer = new EffectComposer( renderer )
+    // composer.addPass( new RenderPass( scene, camera ) )
+    composer.addPass( new RenderPixelatedPass( renderResolution, scene, camera ) )
+    let bloomPass = new UnrealBloomPass( screenResolution, .4, .1, .9 )
+    composer.addPass( bloomPass )
+    composer.addPass( new PixelatePass( renderResolution ) )
+
+    controls = new OrbitControls( camera, renderer.domElement )
+    controls.target.set( 0, 0, 0 )
+    camera.position.z = 2
+    camera.position.y = 2 * Math.tan( Math.PI / 6 )
+    controls.update()
+    // controls.minPolarAngle = controls.maxPolarAngle = controls.getPolarAngle()
 
     const texLoader = new THREE.TextureLoader()
     const tex_crate = pixelTex( texLoader.load( crateURL ) )
@@ -85,7 +109,7 @@ function init() {
             return mesh
         }
         addBox( .4, 0, 0, Math.PI / 4 )
-        // addBox( .2, -.4, -.15, Math.PI / 4 )
+        addBox( .2, -.4, -.15, Math.PI / 4 )
     }
     {
         const planeSideLength = 2
@@ -114,6 +138,7 @@ function init() {
                 specular: 0xffffff,
                 // opacity: 0.5
             } )
+            // new THREE.MeshNormalMaterial()
         )
         crystalMesh.receiveShadow = true
         crystalMesh.castShadow = true
@@ -126,46 +151,23 @@ function init() {
         let directionalLight = new THREE.DirectionalLight( 0xfffc9c, .5 )
         directionalLight.position.set( 100, 100, 100 )
         directionalLight.castShadow = true
-        directionalLight.shadow.radius = 0
+        // directionalLight.shadow.radius = 0
         directionalLight.shadow.mapSize.set( 2048, 2048 )
         scene.add( directionalLight )
     }
     {
-        // let spotLight = new THREE.SpotLight( 0xff8800, 1, 10, Math.PI / 16, .02, 2 )
-        let spotLight = new THREE.SpotLight( 0xff8800, 1, 10, Math.PI / 16, 0, 2 )
+        let spotLight = new THREE.SpotLight( 0xff8800, 1, 10, Math.PI / 16, .02, 2 )
+        // let spotLight = new THREE.SpotLight( 0xff8800, 1, 10, Math.PI / 16, 0, 2 )
         spotLight.position.set( 2, 2, 0 )
         let target = spotLight.target //= new THREE.Object3D()
         scene.add( target )
         target.position.set( 0, 0, 0 )
         spotLight.castShadow = true
         scene.add( spotLight )
-        spotLight.shadow.radius = 0
+        // spotLight.shadow.radius = 0
     }
-
-    // Renderer
-    renderer = new THREE.WebGLRenderer( { antialias: false } )
-    renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = .75
-    renderer.shadowMap.enabled = true
-    renderer.setSize( screenResolution.x, screenResolution.y )
-    document.body.appendChild( renderer.domElement )
-
-    composer = new EffectComposer( renderer )
-    // composer.addPass( new RenderPass( scene, camera ) )
-    composer.addPass( new RenderPixelatedPass( renderResolution, scene, camera ) )
-    let bloomPass = new UnrealBloomPass( screenResolution, .4, .1, .9 )
-    composer.addPass( bloomPass )
-    composer.addPass( new PixelatePass( renderResolution ) )
-
-    controls = new OrbitControls( camera, renderer.domElement )
-    controls.target.set( 0, 0, 0 )
-    camera.position.z = 2
-    camera.position.y = 2 * Math.tan( Math.PI / 6 )
-    controls.update()
-    controls.minPolarAngle = controls.maxPolarAngle = controls.getPolarAngle()
 }
 
-animate()
 function animate() {
     requestAnimationFrame( animate )
     let t = performance.now() / 1000
