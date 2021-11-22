@@ -95,7 +95,7 @@ export default class RenderPixelatedPass extends Pass {
                 float neighborNormalEdgeIndicator(int x, int y, float depth, vec3 normal) {
                     float depthDiff = getDepth(x, y) - depth;
                     
-                    // Edge pixels should yield to faces closer to the 
+                    // Edge pixels should yield to faces closer to the bias direction.
                     vec3 normalEdgeBias = vec3(1., 1., 1.); // This should probably be a parameter.
                     float normalDiff = dot(normal - getNormal(x, y), normalEdgeBias);
                     float normalIndicator = clamp(smoothstep(-.01, .01, normalDiff), 0.0, 1.0);
