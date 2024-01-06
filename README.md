@@ -5,3 +5,6 @@ This was built for a demo, so it's not in a super usable state, but feel free to
 
 [Here's a video.](https://www.youtube.com/watch?v=jFevm02NJ5M)
 
+![Sample](/screenshot.png)
+
+
