@@ -7,4 +7,4 @@ This was built for a quick demo, so it's not in a super usable state, but feel f
 
 ![Sample](/screenshot.png)
 
-
+I'm looking for work right now. If you find this useful, please consider sending a reference my way!
