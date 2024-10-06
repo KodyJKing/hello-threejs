@@ -6,5 +6,3 @@ This was built for a quick demo, so it's not in a super usable state, but feel f
 [Here's a video.](https://www.youtube.com/watch?v=jFevm02NJ5M)
 
 ![Sample](/screenshot.png)
-
-I'm looking for work right now. If you find this useful, please consider sending a reference my way!
